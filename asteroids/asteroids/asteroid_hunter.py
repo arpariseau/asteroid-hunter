@@ -6,8 +6,8 @@ def asteroid_closest_approach():
     all_asteroids = []
     req = requests.get(f'https://api.nasa.gov/neo/rest/v1/neo/browse?api_key={os.environ["POETRY_NASA_API_KEY"]}')
     pages = req.json()['page']['total_pages']
-    for pg in range(0, 5):
-    #set to range(0, pages) for all data - didn't want to rate limit while testing
+    for pg in range(0, pages):
+    #set to range(0, 5) when running pytest to protect from API key rate limiting
         asteroids = requests.get(f'http://www.neowsapp.com/rest/v1/neo/browse?page={pg}&size=20&api_key={os.environ["POETRY_NASA_API_KEY"]}')
         for ast in range(0, 20):
             approaches = asteroids.json()['near_earth_objects'][ast]['close_approach_data']
@@ -15,7 +15,6 @@ def asteroid_closest_approach():
             all_asteroids.append(asteroids.json()['near_earth_objects'][ast])
             all_asteroids[((pg * 20) + ast)]['close_approach_data'] = [closest_approach]
     return json.dumps(all_asteroids)
-
 
 def month_closest_approaches():
     element_count = 0
@@ -28,4 +27,7 @@ def month_closest_approaches():
     month_approaches = {'element_count' : element_count} | {'near_earth_objects' : near_earth_objects}
     return json.dumps(month_approaches)
 
-#def nearest_misses():
+def nearest_misses():
+    all_misses = json.loads(asteroid_closest_approach())
+    nearest_misses = sorted(all_misses, key=lambda x:x['close_approach_data'][0]['miss_distance']['astronomical'])
+    return json.dumps(nearest_misses[:10])
